@@ -4,20 +4,21 @@
   * Jérôme Feret, projet Abstraction, INRIA Paris-Rocquencourt
   * 
   * Creation: 08/03/2010
-  * Last modification: 08/03/2010
+  * Last modification: 27/09/2013
   * * 
   * Some parameters
   * references can be tuned thanks to command-line options
   * other variables has to be set before compilation   
   *  
-  * Copyright 2010 Institut National de Recherche en Informatique et   
+  * Copyright 2010,2011,2012,2013 
+  * Institut National de Recherche en Informatique et   
   * en Automatique.  All rights reserved.  This file is distributed     
   * under the terms of the GNU Library General Public License *)
 
 (** if unsafe = true, then whenever an exception is raised, a default value is output, and no exception is raised*)
 
-let version = "1.01"
-let date = "03/29/2011"
+let version = "1.02"
+let date = "27/09/2013"
 let unsafe = ref true
 let trace = ref false
 let dump_error_as_soon_as_they_occur = ref false 

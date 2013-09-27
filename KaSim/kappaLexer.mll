@@ -13,13 +13,21 @@
    let pos = lexbuf.lex_curr_p in
      lexbuf.lex_curr_p <- {pos with pos_lnum = pos.pos_lnum+1 ; pos_bol = pos.pos_cnum}
 
- let return_error lexbuf msg = 
-	let pos = lexbuf.lex_curr_p in
-		let line = pos.pos_lnum in
-			let loc = Printf.sprintf "line %d, character %d:" line (pos.pos_cnum - pos.pos_bol) in
-			let full_msg = Printf.sprintf "Error (%s) %s %s" pos.pos_fname loc msg 
-			in
-				Printf.eprintf "%s\n" full_msg ; exit 1 
+ let return_error opt_pos lexbuf msg = 
+	let fn,lnum,cnum = 
+		match opt_pos with 
+			| Some (fn,ln,cn) -> (fn,ln,cn) 
+			| None -> 
+				let pos = lexbuf.lex_curr_p in
+				let line = pos.pos_lnum in
+				let cn = pos.pos_cnum - pos.pos_bol
+				in
+				(pos.pos_fname,line,cn)
+	in
+	let loc = Printf.sprintf "line %d, character %d:" lnum cnum in
+	let full_msg = Printf.sprintf "Error (%s) %s %s" fn loc msg 
+	in
+	Printf.eprintf "%s\n" full_msg ; exit 1 
 			
  let position lexbuf = 
 	let pos = lexbuf.lex_curr_p in
@@ -29,36 +37,46 @@
 let blank = [' ' '\t']
 let integer = (['0'-'9']+)
 let real = 
-  (((['0'-'9'] | ['0'-'9']+ '.' ['0'-'9']*) | (['0'-'9']* '.' ['0'-'9']+)) ((['e' 'E'] ['+' '-'] ['0'-'9']+) | (['e' 'E'] ['0'-'9']+))) 
+  (((['0'-'9']+ | ['0'-'9']+ '.' ['0'-'9']*) | (['0'-'9']* '.' ['0'-'9']+)) ((['e' 'E'] ['+' '-'] ['0'-'9']+) | (['e' 'E'] ['0'-'9']+))) 
   | ((['0'-'9']+ '.' ['0'-'9']*) | (['0'-'9']* '.' ['0'-'9']+))   
-let id = (['a'-'z' 'A'-'Z' '0'-'9'] ['a'-'z' 'A'-'Z' '0'-'9' '_' '-']*)
+let id = (['a'-'z' 'A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9' '_' '-' '+']*)
 let internal_state = '~' (['0'-'9' 'a'-'z' 'A'-'Z']+)
-let dot_radius = '.' '{' (['0'-'9']+) '}'
-let plus_radius = '+' '{' (['0'-'9']+) '}'
 let pert = '$' id
-
+	
 rule token = parse
     | "\\\n" {incr_line lexbuf ; token lexbuf}
 		| "do" {let pos = position lexbuf in DO pos}
+		| "set" {let pos = position lexbuf in SET pos}
+		| "repeat" {let pos = position lexbuf in REPEAT pos}
 		| "until" {let pos = position lexbuf in UNTIL pos}
-		| ":=" {let pos = position lexbuf in SET pos}
 		| "&&" {let pos = position lexbuf in AND pos}
 		| "||" {let pos = position lexbuf in OR pos}
-    | "->" {KAPPA_RAR}
-		| "->!" {let pos = position lexbuf in KAPPA_NOPOLY pos}
+    | "<->" {let pos = position lexbuf in KAPPA_LRAR pos}
+		| "->" {let pos = position lexbuf in KAPPA_RAR pos}
+		| "<-" {LAR}
+		| ":=" {let pos = position lexbuf in ASSIGN pos}
+		| "<>" {let pos = position lexbuf in DIFF pos}
 		| pert as s {let pos = position lexbuf in
 									match s with  
 						 			| "$DEL" -> (DELETE pos)
 									| "$ADD" -> (INTRO pos)
 									| "$SNAPSHOT" -> (SNAPSHOT pos) 
 									| "$STOP" -> (STOP pos) 
-									| s -> return_error lexbuf ("Perturbation effect \""^s^"\" is not defined")
+									| "$FLUX" -> (FLUX pos)
+									| "$TRACK" -> (TRACK pos)
+									| "$UPDATE" -> (ASSIGN2 pos)
+									| "$PRINT" -> (PRINT pos)
+									| "$PRINTF" -> (PRINTF pos)
+									| s -> return_error None lexbuf ("Perturbation effect \""^s^"\" is not defined")
 					 			}  
 		| '[' {let lab = read_label "" [']'] lexbuf in 
 						let pos = position lexbuf in 
 							match lab with
 								| "E" -> EVENT pos
+								| "E+" -> PROD_EVENT pos
+								| "E-" -> NULL_EVENT pos
 								| "T" -> TIME pos
+								| "Tsim" -> CPUTIME pos
 								| "log" -> LOG pos
 								| "sin" -> SINUS pos
 								| "cos" -> COSINUS pos
@@ -70,24 +88,28 @@ rule token = parse
 								| "inf" -> INFINITY pos
 								| "true" -> TRUE pos
 								| "false" -> FALSE pos
-								| "not" -> NOT pos
 								| "pi" -> FLOAT (3.14159265,pos)
-								| "emax" -> EMAX pos
-								| "tmax" -> TMAX pos
-								| _ as s -> return_error lexbuf ("Symbol \""^s^"\" is not defined")
+								| "Emax" -> EMAX pos
+								| "Tmax" -> TMAX pos
+								| _ as s -> return_error None lexbuf ("Symbol \""^s^"\" is not defined")
 						}  
-		| '|' {PIPE}
+		| ':' {TYPE_TOK}
+		| ';' {SEMICOLON}
+		| '\"' {let str = read_label "" ['\"'] lexbuf in let pos = position lexbuf in STRING (str,pos)}
     | '\n' {incr_line lexbuf ; NEWLINE}
-		| '\r' {incr_line lexbuf ; NEWLINE}
+		| '\r' {NEWLINE}
     | '#' {comment lexbuf}
-    | integer as n {let pos = position lexbuf in INT(int_of_string n,pos)}
-    | real as f {let pos = position lexbuf in FLOAT(float_of_string f,pos)}
+    | integer as n {let pos = position lexbuf in INT (int_of_string n,pos)}
+    | real as f {let pos = position lexbuf in FLOAT (float_of_string f,pos)}
     | '\'' {let lab = read_label "" ['\''] lexbuf in let pos = position lexbuf in LABEL(lab,pos)}
     | id as str {let pos = position lexbuf in ID(str,pos)}
     | '@' {AT}
     | ',' {COMMA}
     | '(' {OP_PAR}
     | ')' {CL_PAR}
+		| '{' {OP_CUR}
+		| '}' {CL_CUR}
+		| '|' {let pos = position lexbuf in PIPE pos}
 		| '.' {DOT}
 		| '+' {let pos = position lexbuf in PLUS pos}
 		| '*' {let pos = position lexbuf in MULT pos}
@@ -105,23 +127,13 @@ rule token = parse
 								| "var" -> (LET pos)
 								| "plot" -> (PLOT pos)
 								| "mod" -> (PERT pos)
-								| "ref" -> (REF pos)
 								| "obs" -> (OBS pos)
-								| _ as s -> return_error lexbuf ("Instruction \""^s^"\" not recognized")
+								| "def" -> (CONFIG pos)
+								| "token" -> (TOKEN pos)
+								| "volume" -> (VOLUME pos)
+								| _ as s -> return_error None lexbuf ("Instruction \""^s^"\" not recognized")
 					 } 
-		| dot_radius as s { let i = String.index s '{' in 
-													let j = String.index s '}' in 
-														let r = String.sub s (i+1) (j-i-1) in 
-															try DOT_RADIUS (int_of_string r) with 
-																| Failure _ -> return_error lexbuf (Printf.sprintf "Invalid radius")
-										   }
-		| plus_radius as s {let i = String.index s '{' in 
-													let j = String.index s '}' in 
-														let r = String.sub s (i+1) (j-i-1) in 
-															try PLUS_RADIUS (int_of_string r) with 
-																| Failure _ -> return_error lexbuf (Printf.sprintf "Invalid radius")
-										   }
-    | '!' {KAPPA_LNK}
+		| '!' {let pos = position lexbuf in KAPPA_LNK pos}
     | internal_state as s {let i = String.index s '~' in 
 			                     	 let r = String.sub s (i+1) (String.length s-i-1) in
 																let pos = position lexbuf in 
@@ -131,7 +143,7 @@ rule token = parse
     | '_' {let pos = position lexbuf in (KAPPA_SEMI pos)}
     | blank  {token lexbuf}
     | eof {reach_eof lexbuf; EOF}
-    | _ as c {return_error lexbuf (Printf.sprintf "invalid use of character %c" c)}
+    | _ as c {return_error None lexbuf (Printf.sprintf "invalid use of character %c" c)}
 
   and read_label acc char_list = parse
     | eof {acc}
@@ -155,10 +167,9 @@ rule token = parse
 	   	KappaParser.start_rule token lexbuf ; Debug.tag "done" ; close_in d ;
 			Parameter.openInDescriptors := List.tl (!Parameter.openInDescriptors)
  		with 
- 			| Syntax_Error msg -> 
-				(close_in d ; 
+ 			| Syntax_Error (opt_pos,msg) -> 
+				(close_in d ;
 				Parameter.openInDescriptors := List.tl (!Parameter.openInDescriptors) ; 
-				return_error lexbuf msg
+				return_error opt_pos lexbuf msg
 				) 
-			| exn -> (Printexc.print_backtrace stderr ; raise exn)
 }

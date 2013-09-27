@@ -38,6 +38,8 @@ let empty_mixture handler error =
     Cckappa_sig.dot=[];
     Cckappa_sig.c_mixture = Ckappa_sig.EMPTY_MIX}
 
+let empty_pos = ("",0,0)
+
 let empty_rule handler error  = 
   let error,empty_lhs = empty_mixture handler error in 
   let error,empty_rhs = empty_mixture handler error in
@@ -45,7 +47,7 @@ let empty_rule handler error  =
   let error,empty_reverse = Int_storage.Quick_Nearly_inf_Imperatif.create handler error 0 in 
   error,{
     Cckappa_sig.rule_lhs = empty_lhs ; 
-    Cckappa_sig.rule_arrow = Ast.RAR  ;
+    Cckappa_sig.rule_arrow = Ast.RAR empty_pos  ;
     Cckappa_sig.rule_rhs = empty_rhs ; 
     diff_direct = empty_direct ; 
     diff_reverse = empty_reverse ; 
@@ -57,9 +59,9 @@ let empty_e_rule handler error =
     {Cckappa_sig.e_rule_label={Ast.lbl_nme=None ; Ast.lbl_ref=None};
      Cckappa_sig.e_rule_rule = {
        Ckappa_sig.lhs = Ckappa_sig.EMPTY_MIX ; 
-       Ckappa_sig.arrow = Ast.RAR;
+       Ckappa_sig.arrow = Ast.RAR empty_pos;
        Ckappa_sig.rhs = Ckappa_sig.EMPTY_MIX; 
-       Ckappa_sig.k_def = Ast.FLOAT (0.,("",0,0));
+       Ckappa_sig.k_def = Ast.FLOAT (0.,empty_pos);
        Ckappa_sig.k_un = None};
      Cckappa_sig.e_rule_c_rule = rule }
 let rename_rule_rlhs handler error id_agent tab =
@@ -352,7 +354,7 @@ let translate_view parameters error handler k kasim_id agent bond_list =
                in 
                 error,(c_interface,bond_list)
              end
-           | Ckappa_sig.LNK_TYPE (agent',site')  ->                          
+           | Ckappa_sig.LNK_TYPE (site',agent')  ->                          
               begin
                let error,(bool,output) = Ckappa_sig.Dictionary_of_sites.allocate_bool parameters error Misc_sa.compare_unit (Ckappa_sig.Binding port.Ckappa_sig.port_nme) () Misc_sa.const_unit site_dic in
                let error,site_name = 
@@ -385,11 +387,11 @@ let translate_view parameters error handler k kasim_id agent bond_list =
                    | _ , Some (i,_,_,_) ->  
                       error,i
                in 
-               let state = Cckappa_sig.Lnk_type (agent_name',site_name') in  
+               let state = Cckappa_sig.Lnk_type (site_name',agent_name') in  
                let error,(bool,output) = Cckappa_sig.Dictionary_of_States.allocate_bool parameters error Misc_sa.compare_unit (Ckappa_sig.Binding state) () Misc_sa.const_unit state_dic in
                let error,c_interface = 
                  match bool,output with
-                   | _ , None | true, _ -> warn parameters error (Some "line 369") Exit c_interface  
+                   | _ , None (*| true, _*) -> warn parameters error (Some "line 369") Exit c_interface  
                    | _ ,Some (i,_,_,_) -> 
                      Cckappa_sig.Site_map_and_set.add_map 
                        parameters 
@@ -553,24 +555,24 @@ let translate_mixture parameters error handler mixture =
                              )
                end 
            | Some Cckappa_sig.Agent lagk,Some Cckappa_sig.Agent ragk -> 
-               let agent_type = lagk.Cckappa_sig.agent_name in 
-               let error,ldiff,rdiff = Cckappa_sig.Site_map_and_set.diff_map parameters error lagk.Cckappa_sig.agent_interface ragk.Cckappa_sig.agent_interface in 
-               let error,lbondk = Int_storage.Quick_Nearly_inf_Imperatif.unsafe_get parameters error k c_rule_lhs.Cckappa_sig.bonds in  
-               let error,rbondk = Int_storage.Quick_Nearly_inf_Imperatif.unsafe_get parameters error k c_rule_rhs.Cckappa_sig.bonds in  
-               let lbondk = 
+             let agent_type = lagk.Cckappa_sig.agent_name in 
+             let error,ldiff,rdiff = Cckappa_sig.Site_map_and_set.diff_map parameters error lagk.Cckappa_sig.agent_interface ragk.Cckappa_sig.agent_interface in 
+             let error,lbondk = Int_storage.Quick_Nearly_inf_Imperatif.unsafe_get parameters error k c_rule_lhs.Cckappa_sig.bonds in  
+             let error,rbondk = Int_storage.Quick_Nearly_inf_Imperatif.unsafe_get parameters error k c_rule_rhs.Cckappa_sig.bonds in  
+             let lbondk = 
                  match lbondk with 
-                   | None -> Cckappa_sig.Site_map_and_set.empty_map
-                   | Some a -> a 
-               in
-               let rbondk = 
-                 match rbondk with 
-                   | None -> Cckappa_sig.Site_map_and_set.empty_map
-                   | Some a -> a 
-               in
-               let error,direct = Int_storage.Quick_Nearly_inf_Imperatif.set parameters error k (Cckappa_sig.upgrade_interface lagk rdiff) direct in 
-               let error,reverse = Int_storage.Quick_Nearly_inf_Imperatif.set parameters error k (Cckappa_sig.upgrade_interface ragk ldiff) reverse in 
-               let error,half_release_set = set_released_sites parameters error k lagk ragk half_release_set in                 
-                 error,(direct,reverse,actions,half_release_set,agent_type,lbondk,rbondk)
+                 | None -> Cckappa_sig.Site_map_and_set.empty_map
+                 | Some a -> a 
+             in
+             let rbondk = 
+               match rbondk with 
+               | None -> Cckappa_sig.Site_map_and_set.empty_map
+               | Some a -> a 
+             in
+             let error,direct = Int_storage.Quick_Nearly_inf_Imperatif.set parameters error k (Cckappa_sig.upgrade_interface lagk rdiff) direct in 
+             let error,reverse = Int_storage.Quick_Nearly_inf_Imperatif.set parameters error k (Cckappa_sig.upgrade_interface ragk ldiff) reverse in 
+             let error,half_release_set = set_released_sites parameters error k lagk ragk half_release_set in                 
+             error,(direct,reverse,actions,half_release_set,agent_type,lbondk,rbondk)
            | Some Cckappa_sig.Ghost,Some Cckappa_sig.Ghost -> warn parameters error (Some "line 539") Exit (direct,reverse,actions,half_release_set,0,Cckappa_sig.Site_map_and_set.empty_map,Cckappa_sig.Site_map_and_set.empty_map) 
      
            | None,_ | _,None -> 
@@ -668,12 +670,13 @@ let translate_mixture parameters error handler mixture =
                  with Cckappa_sig.remove = removal_actions}}}
         
  let translate_init parameters error handler init =  
-   let (a,mixture,c) = init in
+   let (a,b,mixture,c) = init in
    let error,c_mixture = translate_mixture parameters error handler mixture in 
    error,
-   {Cckappa_sig.e_init_factor = a ;
+   {Cckappa_sig.e_init_factor = b ;
     Cckappa_sig.e_init_mixture = mixture ;
     Cckappa_sig.e_init_c_mixture = c_mixture ;
+    Cckappa_sig.e_init_string_pos = a;
     Cckappa_sig.e_init_pos = c} 
    
  let translate_var parameters error handler var =
@@ -705,7 +708,6 @@ let translate_mixture parameters error handler mixture =
          in 
          error,((ag,pos)::list))
        (error,[]) compil.Ckappa_sig.signatures in 
-   
    let error,c_rules = 
      List.fold_left 
        (fun (error,list) rule -> 
@@ -713,7 +715,6 @@ let translate_mixture parameters error handler mixture =
          error,(c_rule::list))
        (error,[]) compil.Ckappa_sig.rules 
     in 
-   
     let error,c_observables = 
      List.fold_left 
        (fun (error,list) obs -> 
@@ -728,7 +729,6 @@ let translate_mixture parameters error handler mixture =
          error,c_init::list)
        (error,[]) compil.Ckappa_sig.init
    in 
-    
    let error,c_perturbations = 
      List.fold_left 
        (fun (error,list) perturb -> 

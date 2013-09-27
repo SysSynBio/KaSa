@@ -34,8 +34,8 @@ let rev_ast mixture =
   let rec aux mixture sol = 
     match mixture with
       | Ast.EMPTY_MIX -> sol 
-      | Ast.DOT(i,agent,mixture) -> aux mixture (Ast.DOT(i,agent,sol))
-      | Ast.PLUS(i,agent,mixture) -> aux mixture (Ast.PLUS(i,agent,sol))
+(*      | Ast.DOT(i,agent,mixture) -> aux mixture (Ast.DOT(i,agent,sol))*)
+(*      | Ast.PLUS(i,agent,mixture) -> aux mixture (Ast.PLUS(i,agent,sol))*)
       | Ast.COMMA(agent,mixture) -> aux mixture (Ast.COMMA(agent,sol))
   in aux mixture Ast.EMPTY_MIX 
   
@@ -67,7 +67,7 @@ let scan_agent parameters k agent remanent =
 
 let rec collect_binding_label parameters mixture f k remanent = 
   match mixture with 
-        | Ast.COMMA (agent,mixture) | Ast.DOT (_,agent,mixture) | Ast.PLUS(_,agent,mixture)-> 
+  | Ast.COMMA (agent,mixture) (*| Ast.DOT (_,agent,mixture) | Ast.PLUS(_,agent,mixture)*) -> 
            collect_binding_label parameters mixture f (k+1) (scan_agent parameters (f k) agent remanent)
         | Ast.EMPTY_MIX -> remanent 
 
@@ -80,7 +80,7 @@ let translate_lnk_state parameters lnk_state remanent =
      | Ast.FREE -> Ckappa_sig.FREE,remanent
      | Ast.LNK_ANY position -> Ckappa_sig.LNK_ANY position,remanent 
      | Ast.LNK_SOME position -> Ckappa_sig.LNK_SOME position,remanent
-     | Ast.LNK_TYPE x -> Ckappa_sig.LNK_TYPE x,remanent
+     | Ast.LNK_TYPE (x,y) -> Ckappa_sig.LNK_TYPE (x,y),remanent
 
 let translate_port parameters port remanent = 
     let lnk,remanent = translate_lnk_state parameters port.Ast.port_lnk remanent in   
@@ -121,14 +121,14 @@ let rec translate_mixture_zero_zero  parameters mixture remanent tail_size =
           let agent,remanent = translate_agent parameters agent remanent in 
           let mixture,remanent = translate_mixture_zero_zero parameters mixture remanent tail_size  in 
             Ckappa_sig.COMMA(agent,mixture),remanent 
-      | Ast.DOT(i,agent,mixture) -> 
+(*      | Ast.DOT(i,agent,mixture) -> 
           let agent,remanent = translate_agent parameters agent remanent in 
           let mixture,remanent = translate_mixture_zero_zero parameters mixture remanent tail_size  in 
             Ckappa_sig.DOT(i,agent,mixture),remanent
       | Ast.PLUS(i,agent,mixture) -> 
           let agent,remanent = translate_agent parameters agent remanent in 
           let mixture,remanent = translate_mixture_zero_zero parameters mixture remanent tail_size  in 
-            Ckappa_sig.PLUS(i,agent,mixture),remanent
+            Ckappa_sig.PLUS(i,agent,mixture),remanent*)
         
 let rec translate_mixture_in_rule parameters mixture remanent prefix_size empty_size tail_size = 
    if prefix_size=0 
@@ -143,14 +143,14 @@ let rec translate_mixture_in_rule parameters mixture remanent prefix_size empty_
           let agent,remanent = translate_agent parameters agent remanent in 
           let mixture,remanent = translate_mixture_in_rule parameters mixture remanent (prefix_size-1) empty_size tail_size  in 
             Ckappa_sig.COMMA(agent,mixture),remanent 
-      | Ast.DOT(i,agent,mixture) -> 
+(*      | Ast.DOT(i,agent,mixture) -> 
           let agent,remanent = translate_agent parameters agent remanent in 
           let mixture,remanent = translate_mixture_in_rule parameters mixture remanent (prefix_size-1) empty_size tail_size  in 
             Ckappa_sig.DOT(i,agent,mixture),remanent
       | Ast.PLUS(i,agent,mixture) -> 
           let agent,remanent = translate_agent parameters agent remanent in 
           let mixture,remanent = translate_mixture_in_rule parameters mixture remanent (prefix_size-1) empty_size tail_size  in 
-            Ckappa_sig.PLUS(i,agent,mixture),remanent
+            Ckappa_sig.PLUS(i,agent,mixture),remanent*)
 
  let rec translate_mixture parameters mixture remanent  = 
     match mixture with 
@@ -159,14 +159,14 @@ let rec translate_mixture_in_rule parameters mixture remanent prefix_size empty_
           let agent,remanent = translate_agent parameters agent remanent in 
           let mixture,remanent = translate_mixture parameters mixture remanent in 
             Ckappa_sig.COMMA(agent,mixture),remanent 
-      | Ast.DOT(i,agent,mixture) -> 
+(*      | Ast.DOT(i,agent,mixture) -> 
           let agent,remanent = translate_agent parameters agent remanent in 
           let mixture,remanent = translate_mixture parameters mixture remanent in 
             Ckappa_sig.DOT(i,agent,mixture),remanent
       | Ast.PLUS(i,agent,mixture) -> 
           let agent,remanent = translate_agent parameters agent remanent in 
           let mixture,remanent = translate_mixture parameters mixture remanent in 
-            Ckappa_sig.PLUS(i,agent,mixture),remanent
+            Ckappa_sig.PLUS(i,agent,mixture),remanent*)
  
 let support_agent ag = 
   let name = ag.Ast.ag_nme in 
@@ -187,7 +187,7 @@ let length mixture =
   let rec aux mixture k = 
     match mixture with 
       | Ast.EMPTY_MIX -> k 
-      | Ast.COMMA(_,mixture) | Ast.DOT(_,_,mixture) | Ast.PLUS(_,_,mixture) -> aux mixture (k+1)
+      | Ast.COMMA(_,mixture) (*| Ast.DOT(_,_,mixture) | Ast.PLUS(_,_,mixture)*) -> aux mixture (k+1)
   in aux mixture 0 
   
   
@@ -198,11 +198,11 @@ let longuest_prefix mixture1 mixture2 =
         begin
           k,mixture1,mixture2
         end 
-      | Ast.COMMA(agent,mixture) | Ast.DOT(_,agent,mixture) | Ast.PLUS(_,agent,mixture) ->
+      | Ast.COMMA(agent,mixture) (*| Ast.DOT(_,agent,mixture) | Ast.PLUS(_,agent,mixture)*) ->
         begin
           match mixture2 with 
             | Ast.EMPTY_MIX -> k,mixture1,mixture2
-            | Ast.COMMA(agent',mixture') | Ast.DOT(_,agent',mixture') | Ast.PLUS(_,agent',mixture') -> 
+            | Ast.COMMA(agent',mixture') (*| Ast.DOT(_,agent',mixture') | Ast.PLUS(_,agent',mixture')*) -> 
                begin 
                  if compatible_agent agent agent'
                  then  
@@ -228,7 +228,16 @@ let refine_mixture parameters error mixture =
      let remanent = collect_binding_label parameters mixture (fun i -> i) 0 (error,Ckappa_sig.Int_Set_and_Map.empty_map) in  
      let mixture,(error,map) = translate_mixture parameters mixture remanent in
     error,mixture
-  
+
+let refine_init_t parameters error init_t = 
+  match 
+    init_t 
+  with 
+    Ast.INIT_MIX(alg_ex,mixture) -> 
+      let error,mixture = refine_mixture parameters error mixture in 
+      error,Some(alg_ex,mixture)
+  | _ -> error,None
+    
 let refine_agent parameters error agent =
     let remanent = scan_agent parameters 0 agent (error,Ckappa_sig.Int_Set_and_Map.empty_map) in 
     let agent,(error,map) = translate_agent parameters agent remanent in 
@@ -281,9 +290,12 @@ let translate_compil parameters error compil =
   in 
   let error,init_rev = 
      List.fold_left
-      (fun (error,list) (id,mixture,position) -> 
-        let error,mixture = refine_mixture parameters error mixture in 
-        error,(id,mixture,position)::list)        
+      (fun (error,list) (id,init_t,position) -> 
+        let error,mixture = refine_init_t parameters error init_t in 
+        match mixture 
+        with 
+          Some (alg,mixture) ->  error,(id,alg,mixture,position)::list
+        | None -> error,list)
     (error,[])
     compil.Ast.init    
   in 
@@ -291,18 +303,24 @@ let translate_compil parameters error compil =
     List.fold_left
       (fun (error,list) (b,m,p,o) -> 
         let error,m' = 
-          match m with 
-            | Ast.INTRO (a,m,p) -> 
+          List.fold_left 
+            (fun (error,list) m -> 
+              match m with 
+              | Ast.INTRO (a,m,p) -> 
                 let error,m' = refine_mixture parameters error (rev_ast m) in 
-                  error,Ckappa_sig.INTRO(a,m',p)
-            | Ast.DELETE (a,m,p) -> 
+                error,Ckappa_sig.INTRO(a,m',p)::list
+              | Ast.DELETE (a,m,p) -> 
                 let error,m' = refine_mixture parameters error (rev_ast m) in 
-                  error,Ckappa_sig.DELETE(a,m',p)
-            | Ast.UPDATE (x) -> error,Ckappa_sig.UPDATE x 
-            | Ast.STOP (x) -> error,Ckappa_sig.STOP x 
-            | Ast.SNAPSHOT p -> error,Ckappa_sig.SNAPSHOT p 
+                error,Ckappa_sig.DELETE(a,m',p)::list
+              | Ast.UPDATE (x) -> error,(Ckappa_sig.UPDATE x)::list
+              | Ast.STOP (x) -> error,(Ckappa_sig.STOP x)::list
+              | Ast.SNAPSHOT p -> error,(Ckappa_sig.SNAPSHOT p)::list 
+              | _ -> error,list (*to do*))
+            (error,[])
+            m
         in
-      error,(b,m',p,o)::list)
+        error,(b,List.rev m',p,o)::list
+      )
     (error,[])
     compil.Ast.perturbations
   in 
