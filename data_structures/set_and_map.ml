@@ -4,13 +4,14 @@
     * Jérôme Feret, projet Abstraction, INRIA Paris-Rocquencourt
     * 
     * Creation: 2010, the 7th of July 
-    * Last modification: 2011, 23rf of March 
+    * Last modification: 2013, 27th of September
     *  
     * This library provides primitives to deal with Set and Maps of of ordered elements, in the fashion of Ocaml's Map;
     * It provides efficient iterators
     *  
-    * Copyright 2010 Institut National de Recherche en Informatique et   
-    * en Automatique.  All rights reserved.  This file is distributed     
+    * Copyright 2010,2011,2012,2013 Institut National de Recherche 
+    * en Informatique et en Automatique.  
+    * All rights reserved.  This file is distributed     
     *  under the terms of the GNU Library General Public License *)
 
 
@@ -604,12 +605,13 @@ module Make(Ord:OrderedType) =
                     Some (Node_map(left1,key1,data1,left2,height1),data2,right2)
    
   let rec join_map parameters rh left key value right =
-      match balance_map parameters rh left key value right with 
+    match balance_map parameters rh left key value right with 
             | rh',Empty_map -> invalid_arg_map parameters rh (Some "join_map, line 580") (invalid_arg "Set_and_map.join_map")
             | rh',(Node_map (left2,key2,data2,right2,_) as map2) -> 
-                      if height_map left2 > 2 
-                      then join_map parameters rh' left2 key2 data2 right2 
-                      else rh',map2 
+              let h = height_map left2 - height_map right2 in 
+              if h > 2 || h< -2 
+              then join_map parameters rh' left2 key2 data2 right2 
+              else rh',map2 
    
   let rec split_map parameters rh value map = 
       match map with 
@@ -710,27 +712,27 @@ module Make(Ord:OrderedType) =
        match map1 with 
                  | Empty_map -> rh,Empty_map,map2 
                  | Node_map(left1,key1,data1,right1,_) -> 
-                      let rh',(left2,data2,right2) = split_map parameters rh key1 map2 in 
-                      let error,oleft1,oleft2 = diff_map parameters rh left1 left2 in
-                      let error,oright1,oright2 = diff_map parameters rh right1 right2 in
-                       begin 
-                         match data2 with 
-                           | Some x when x = data1 ->  
-                               let error,o1 = merge_map parameters error oleft1 oright1 in 
-                               let error,o2 = merge_map parameters error oleft2 oright2 in
-                                 error,o1,o2 
-                             
-                           | Some data2  ->  
-                               let error,o1 = join_map parameters error oleft1 key1 data1 oright1 in 
-                               let error,o2 = join_map parameters error oleft2 key1 data2 oright2 in
-                                 error,o1,o2 
-                           | None -> 
-                               let error,o1 = join_map parameters error oleft1 key1 data1 oright1 in 
-                               let error,o2 = merge_map parameters error oleft2 oright2 in
-                                 error,o1,o2 
-                         end 
-                        
-               
+                   let rh',(left2,data2,right2) = split_map parameters rh key1 map2 in 
+                   let error,oleft1,oleft2 = diff_map parameters rh left1 left2 in
+                   let error,oright1,oright2 = diff_map parameters rh right1 right2 in
+                   begin 
+                     match data2 with 
+                     | Some x when x = data1 ->  
+                       let error,o1 = merge_map parameters error oleft1 oright1 in 
+                       let error,o2 = merge_map parameters error oleft2 oright2 in
+                       error,o1,o2 
+                         
+                     | Some data2  ->  
+                             let error,o1 = join_map parameters error oleft1 key1 data1 oright1 in 
+                             let error,o2 = join_map parameters error oleft2 key1 data2 oright2 in
+                             error,o1,o2 
+                     | None -> 
+                       let error,o1 = join_map parameters error oleft1 key1 data1 oright1 in 
+                       let error,o2 = merge_map parameters error oleft2 oright2 in
+                       error,o1,o2 
+                   end 
+                     
+                     
 end:Set_and_Map with type key = Ord.t and type elt = Ord.t)
       
     

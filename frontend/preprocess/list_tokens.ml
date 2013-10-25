@@ -223,7 +223,7 @@ let rec scan_mixture parameters remanent mixture =
 
 let scan_initial_states parameters = 
   List.fold_left 
-    (fun remanent (_,m,_) -> scan_mixture parameters remanent m) 
+    (fun remanent (_,_,m,_) -> scan_mixture parameters remanent m) 
     
 let scan_declarations parameters  = 
   List.fold_left 
@@ -233,11 +233,13 @@ let scan_observables parameters remanent variable = remanent
 let scan_perts parameters = 
   List.fold_left 
     (fun remanent (_,m,_,_) -> 
-          match m with 
-            | Ckappa_sig.INTRO (_,m,_) | Ckappa_sig.DELETE(_,m,_) ->   
+          List.fold_left 
+            (fun remanent m -> 
+              match m with 
+              | Ckappa_sig.INTRO (_,m,_) | Ckappa_sig.DELETE(_,m,_) ->   
                 scan_mixture parameters remanent m 
-            | Ckappa_sig.UPDATE _ | Ckappa_sig.STOP _ | Ckappa_sig.SNAPSHOT _  -> remanent 
-            )
+              | Ckappa_sig.UPDATE _ | Ckappa_sig.STOP _ | Ckappa_sig.SNAPSHOT _  -> remanent 
+            ) remanent m)
               
 let scan_rules parameters a b =  
   let _ = 

@@ -52,13 +52,19 @@ type rule =
     k_def:Ast.alg_expr ; 
     k_un:Ast.alg_expr option
   }
-type perturbation = Ast.bool_expr * modif_expr * Tools.pos * Ast.bool_expr option
+type perturbation = Ast.bool_expr * modif_expr list * Tools.pos * Ast.bool_expr option
 and modif_expr = 
 	| INTRO of (Ast.alg_expr * mixture * Tools.pos) 
 	| DELETE of (Ast.alg_expr * mixture * Tools.pos) 
-	| UPDATE of (string * Tools.pos * Ast.alg_expr * Tools.pos) (*TODO: pause*)
-	| STOP of Tools.pos
-	| SNAPSHOT of Tools.pos (*maybe later of mixture too*)
+ 	| UPDATE of (Ast.str_pos * Ast.alg_expr) (*TODO: pause*)
+	| UPDATE_TOK of (Ast.str_pos * Ast.alg_expr) (*TODO: pause*)
+	| STOP of (Ast.print_expr list * Tools.pos)
+	| SNAPSHOT of (Ast.print_expr list * Tools.pos) (*maybe later of mixture too*)
+	| PRINT of ((Ast.print_expr list) * (Ast.print_expr list) * Tools.pos)
+	| CFLOW of (Ast.str_pos * Tools.pos) 
+	| CFLOWOFF of (Ast.str_pos * Tools.pos)
+	| FLUX of Ast.print_expr list * Tools.pos
+	| FLUXOFF of Ast.print_expr list * Tools.pos
 
    
 type variable =
@@ -71,7 +77,7 @@ type compil =
 	signatures : (agent * Tools.pos) list ; (*agent signature declaration*)
     rules : (Ast.rule_label * rule) list ; (*rules (possibly named)*)
     observables : Ast.alg_expr list ; (*list of patterns to plot*) 
-    init : (int * mixture * Tools.pos) list ; (*initial graph declaration*)
+    init : (Ast.str_pos option * Ast.alg_expr * mixture * Tools.pos) list ; (*initial graph declaration*)
 	perturbations : perturbation list
   }
   

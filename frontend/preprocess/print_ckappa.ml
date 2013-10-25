@@ -146,8 +146,8 @@ let print_rule parameter error rule =
   let arrow = 
     match rule.Ckappa_sig.arrow 
     with 
-      | Ast.RAR          -> parameter.Remanent_parameters_sig.symbols.Remanent_parameters_sig.uni_arrow 
-      | Ast.RAR_NOPOLY _ -> parameter.Remanent_parameters_sig.symbols.Remanent_parameters_sig.uni_arrow_nopoly
+      | Ast.RAR _         -> parameter.Remanent_parameters_sig.symbols.Remanent_parameters_sig.uni_arrow 
+    (*  | Ast.RAR_NOPOLY _ -> parameter.Remanent_parameters_sig.symbols.Remanent_parameters_sig.uni_arrow_nopoly*)
   in 
   let _ = Printf.fprintf parameter.Remanent_parameters_sig.log " %s " arrow in  
   let error = print_mixture parameter error rule.Ckappa_sig.rhs in 

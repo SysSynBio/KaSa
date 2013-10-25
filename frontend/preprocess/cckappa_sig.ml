@@ -164,7 +164,8 @@ type enriched_rule =
 
 type enriched_init = 
   {
-   e_init_factor : int ; 
+   e_init_factor : Ast.alg_expr ;
+   e_init_string_pos: Ast.str_pos option ; 
    e_init_mixture : Ckappa_sig.mixture ;
    e_init_c_mixture : mixture ; 
    e_init_pos : Tools.pos

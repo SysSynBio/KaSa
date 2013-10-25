@@ -121,8 +121,12 @@ let string_of_rule parameters error handler compiled rule_id =
       in 
         match var 
         with 
-         | None  -> warn parameters error (Some "line 122") Exit ("NONE"^(string_of_int rule_id)^"/"^(string_of_int var_id))   
-         | Some Cckappa_sig.VAR_ALG _ -> warn parameters error (Some "line 122") Exit "ALG"
+         | None  -> warn parameters error (Some "line 12299") Exit ("NONE"^(string_of_int rule_id)^"/"^(string_of_int var_id))   
+         | Some Cckappa_sig.VAR_ALG _ -> 
+           (*TO DO*)
+           error,"ALG" 
+(*
+warn parameters error (Some "line 122") Exit "ALG"*)
          | Some Cckappa_sig.VAR_KAPPA(a,(b,c)) ->
              let m1 = b in  
              let m2 = string_of_int  var_id in 
@@ -202,7 +206,8 @@ let print_rule_dot parameters error rule_id m1 m2 rule =
         match var 
         with 
          | None  -> warn parameters error (Some "line 122") Exit ()               
-         | Some Cckappa_sig.VAR_ALG _ -> warn parameters error (Some "line 122") Exit ()
+         | Some Cckappa_sig.VAR_ALG _ -> (*to do*) error,()
+(*warn parameters error (Some "line 122") Exit ()*)
          | Some Cckappa_sig.VAR_KAPPA(a,(b,c)) ->
              let m1 = "" in  
              let m2 = string_of_int  var_id in 
